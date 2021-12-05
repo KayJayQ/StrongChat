@@ -8,6 +8,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"sync"
 )
@@ -62,6 +63,27 @@ func (this *Server) Handler(conn net.Conn) {
 
 	// Broad cast user login message
 	this.BroadCast(user, "Logged in")
+
+	// Accept user messages
+	go func() {
+		buf := make([]byte, 4096)
+		for {
+			n, err := conn.Read(buf)
+			if n == 0 {
+				this.BroadCast(user, "Logged out")
+				return
+			}
+			if err != nil && err != io.EOF {
+				fmt.Println("Conn read err:", err)
+				return
+			}
+
+			// rstrip message
+			msg := string(buf[:n-1])
+			// broadcast current user message
+			this.BroadCast(user, msg)
+		}
+	}()
 
 	// temp block
 	select {}
