@@ -55,14 +55,10 @@ func (this *Server) BroadCast(user *User, msg string) {
 
 // Socket handler
 func (this *Server) Handler(conn net.Conn) {
-	// user checkin, join in online map
-	user := NewUser(conn)
-	this.mapLock.Lock()
-	this.OnlineMap[user.Name] = user
-	this.mapLock.Unlock()
+	// create user assests
+	user := NewUser(conn, this)
 
-	// Broad cast user login message
-	this.BroadCast(user, "Logged in")
+	user.Online()
 
 	// Accept user messages
 	go func() {
@@ -70,7 +66,7 @@ func (this *Server) Handler(conn net.Conn) {
 		for {
 			n, err := conn.Read(buf)
 			if n == 0 {
-				this.BroadCast(user, "Logged out")
+				user.Offline()
 				return
 			}
 			if err != nil && err != io.EOF {
@@ -81,7 +77,7 @@ func (this *Server) Handler(conn net.Conn) {
 			// rstrip message
 			msg := string(buf[:n-1])
 			// broadcast current user message
-			this.BroadCast(user, msg)
+			user.HandleMessage(msg)
 		}
 	}()
 
