@@ -1,7 +1,7 @@
 import socket
 import sys
 
-def netcat(hostname, port, content = "GET 127.0.0.1:8080 HTTP/1.1"):
+def netcat(hostname = "127.0.0.1", port = 8080, content = "GET 127.0.0.1:8080 HTTP/1.1"):
     port = int(port)
     content = content.encode("utf-8")
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -12,7 +12,7 @@ def netcat(hostname, port, content = "GET 127.0.0.1:8080 HTTP/1.1"):
         data = s.recv(1024)
         if data == "":
             break
-        print("Received:", repr(data))
+        print("Received:", str(data, encoding="utf-8"))
     print("Connection closed.")
     s.close()
 
