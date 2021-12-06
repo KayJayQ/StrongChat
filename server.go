@@ -61,6 +61,9 @@ func (this *Server) Handler(conn net.Conn) {
 
 	user.Online()
 
+	// setup activity counter
+	keepAlive := make(chan bool)
+
 	// Accept user messages
 	go func() {
 		buf := make([]byte, 4096)
@@ -77,13 +80,27 @@ func (this *Server) Handler(conn net.Conn) {
 
 			// rstrip message
 			msg := string(buf[:n-1])
-			// broadcast current user message
+			// handle current user message
 			user.HandleMessage(msg)
+			// reset activity counter
+			keepAlive <- true
 		}
 	}()
 
 	// temp block
-	select {}
+	for {
+		select {
+		case <-keepAlive:
+			// NOOP
+		case <-time.After(time.Minute * 15):
+			// No activity timeout
+			// force logout
+			user.SendMsg("No activity for 15min, you are logged out")
+			close(user.C)
+			conn.Close()
+			return
+		}
+	}
 }
 
 // Server startup
