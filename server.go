@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 // Server class datatypes
@@ -49,7 +50,7 @@ func (this *Server) ListenMessage() {
 
 // BroadCast message
 func (this *Server) BroadCast(user *User, msg string) {
-	sendMsg := "[" + user.Addr + "]" + user.Name + ":" + msg
+	sendMsg := "[" + time.Now().Format("15:04:05") + "]" + user.Name + ":" + msg
 	this.Message <- sendMsg
 }
 

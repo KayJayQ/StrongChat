@@ -6,7 +6,10 @@
 */
 package main
 
-import "net"
+import (
+	"net"
+	"strings"
+)
 
 // User class datatypes
 type User struct {
@@ -58,9 +61,25 @@ func (this *User) Offline() {
 	this.server.BroadCast(this, "Logged out")
 }
 
+// Send message to certain user
+func (this *User) SendMsg(msg string) {
+	this.conn.Write([]byte(msg))
+}
+
 // User message handler
 func (this *User) HandleMessage(msg string) {
-	this.server.BroadCast(this, msg)
+	// parse message to handle user cmds
+	params := strings.Split(msg, "?")
+	if len(params) == 0 {
+		return
+	}
+
+	// if found cmd in api map, execute, or broadcast message
+	if f, found := api_map[params[0]]; found {
+		f(this, this.server, params)
+	} else {
+		this.server.BroadCast(this, msg)
+	}
 }
 
 // Listen user's channel and forward to user connection
