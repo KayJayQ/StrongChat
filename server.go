@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 // Server class datatypes
@@ -49,20 +50,19 @@ func (this *Server) ListenMessage() {
 
 // BroadCast message
 func (this *Server) BroadCast(user *User, msg string) {
-	sendMsg := "[" + user.Addr + "]" + user.Name + ":" + msg
+	sendMsg := "[" + time.Now().Format("15:04:05") + "]" + user.Name + ":" + msg
 	this.Message <- sendMsg
 }
 
 // Socket handler
 func (this *Server) Handler(conn net.Conn) {
-	// user checkin, join in online map
-	user := NewUser(conn)
-	this.mapLock.Lock()
-	this.OnlineMap[user.Name] = user
-	this.mapLock.Unlock()
+	// create user assests
+	user := NewUser(conn, this)
 
-	// Broad cast user login message
-	this.BroadCast(user, "Logged in")
+	user.Online()
+
+	// setup activity counter
+	keepAlive := make(chan bool)
 
 	// Accept user messages
 	go func() {
@@ -70,7 +70,7 @@ func (this *Server) Handler(conn net.Conn) {
 		for {
 			n, err := conn.Read(buf)
 			if n == 0 {
-				this.BroadCast(user, "Logged out")
+				user.Offline()
 				return
 			}
 			if err != nil && err != io.EOF {
@@ -80,13 +80,27 @@ func (this *Server) Handler(conn net.Conn) {
 
 			// rstrip message
 			msg := string(buf[:n-1])
-			// broadcast current user message
-			this.BroadCast(user, msg)
+			// handle current user message
+			user.HandleMessage(msg)
+			// reset activity counter
+			keepAlive <- true
 		}
 	}()
 
 	// temp block
-	select {}
+	for {
+		select {
+		case <-keepAlive:
+			// NOOP
+		case <-time.After(time.Minute * 15):
+			// No activity timeout
+			// force logout
+			user.SendMsg("ERR: No activity for 15min, you are logged out")
+			close(user.C)
+			conn.Close()
+			return
+		}
+	}
 }
 
 // Server startup
