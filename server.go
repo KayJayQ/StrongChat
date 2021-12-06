@@ -95,7 +95,7 @@ func (this *Server) Handler(conn net.Conn) {
 		case <-time.After(time.Minute * 15):
 			// No activity timeout
 			// force logout
-			user.SendMsg("No activity for 15min, you are logged out")
+			user.SendMsg("ERR: No activity for 15min, you are logged out")
 			close(user.C)
 			conn.Close()
 			return

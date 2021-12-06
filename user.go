@@ -69,7 +69,7 @@ func (this *User) SendMsg(msg string) {
 // User message handler
 func (this *User) HandleMessage(msg string) {
 	// parse message to handle user cmds
-	params := strings.Split(msg, "?")
+	params := strings.Split(msg, "|")
 	if len(params) == 0 {
 		return
 	}
